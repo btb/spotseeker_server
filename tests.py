@@ -51,6 +51,7 @@ from spotseeker_server.test.hours.overlap import SpotHoursOverlapTest
 from spotseeker_server.test.hours.modify import SpotHoursModifyTest
 from spotseeker_server.test.auth.all_ok import SpotAuthAllOK
 from spotseeker_server.test.auth.oauth import SpotAuthOAuth
+from spotseeker_server.test.auth.imageoauth import SpotImagePOSTAuthOAuth
 from spotseeker_server.test.auth.oauth_logger import SpotAuthOAuthLogger
 from spotseeker_server.test.uw_spot.spot_form import UWSpotFormTest
 from spotseeker_server.test.uw_spot.spot_post import UWSpotPOSTTest
