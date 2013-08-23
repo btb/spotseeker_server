@@ -29,7 +29,6 @@ from oauth_provider.utils import get_oauth_request, verify_oauth_request
 from oauth_provider.store import store, InvalidConsumerError, InvalidTokenError
 from spotseeker_server.models import TrustedOAuthClient
 
-
 def authenticate_application(*args, **kwargs):
     request = args[1]
     try:
