@@ -27,11 +27,7 @@ from spotseeker_server import models
 import hashlib
 import time
 import oauth2 as oauth
-import urllib2
-import simplejson as json
 from oauth_provider.models import Consumer
-from poster.streaminghttp import register_openers
-from poster.encode import multipart_encode
 
 TEST_ROOT = abspath(dirname(__file__))
 
