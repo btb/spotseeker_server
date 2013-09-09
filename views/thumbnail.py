@@ -26,6 +26,7 @@ from django.http import HttpResponse
 from django.utils.http import http_date
 from spotseeker_server.require_auth import *
 from cStringIO import StringIO
+from django.core.cache import cache
 import simplejson as json
 import Image
 import time
@@ -107,10 +108,25 @@ class ThumbnailView(RESTDispatch):
         return response
 
 class MultiThumbnailView(RESTDispatch):
+
+    def build_response(self, image_data, offsets):
+        response = HttpResponse(image_data, content_type='image/jpeg')
+        # 7 day timeout?
+        response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 7)
+        response['Sprite-Offsets'] = offsets
+        return response
+
     """ Returns 200 with a thumbnail of a SpotImage.
     """
     @app_auth_required
     def GET(self, request, image_ids, thumb_dimensions=None, constrain=False):
+
+        cached_image = cache.get('multi_image_%s' % image_ids)
+        cached_offsets = cache.get('multi_image_offsets_%s' % image_ids)
+
+        if cached_image and cached_offsets:
+            return self.build_response(cached_image, cached_offsets)
+
         thumbnails = {}
         width = 0
         height = 0
@@ -147,11 +163,11 @@ class MultiThumbnailView(RESTDispatch):
             running_height += thumbnails[image_id].size[1]
 
         tmp = StringIO()
-        total_image.save(tmp, thumb.format, quality=95)
+        total_image.save(tmp, 'jpeg', quality=95)
         tmp.seek(0)
 
-        response = HttpResponse(tmp.getvalue(), content_type=img.content_type)
-        # 7 day timeout?
-        response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 7)
-        response['Sprite-Offsets'] = json.dumps(offset_data, separators=(',',':'))
-        return response
+        cache.set('multi_image_%s' % image_ids, tmp.getvalue())
+        cache.set('multi_image_offsets_%s' % image_ids, json.dumps(offset_data, separators=(',',':')))
+
+        return self.build_response(tmp.getvalue(), json.dumps(offset_data, separators=(',',':')))
+
