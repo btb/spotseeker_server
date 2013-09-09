@@ -28,6 +28,7 @@ from spotseeker_server.require_auth import *
 from cStringIO import StringIO
 from django.core.cache import cache
 import simplejson as json
+import hashlib
 import Image
 import time
 import re
@@ -121,8 +122,11 @@ class MultiThumbnailView(RESTDispatch):
     @app_auth_required
     def GET(self, request, image_ids, thumb_dimensions=None, constrain=False):
 
-        cached_image = cache.get('multi_image_%s' % image_ids)
-        cached_offsets = cache.get('multi_image_offsets_%s' % image_ids)
+        image_cache_key = 'multi_image_%s' % hashlib.sha224('%s_%s' % (image_ids, thumb_dimensions)).hexdigest()
+        offsets_cache_key = 'multi_image_offsets_%s' % hashlib.sha224('%s_%s' % (image_ids, thumb_dimensions)).hexdigest()
+
+        cached_image = cache.get(image_cache_key)
+        cached_offsets = cache.get(offsets_cache_key)
 
         if cached_image and cached_offsets:
             return self.build_response(cached_image, cached_offsets)
@@ -166,8 +170,8 @@ class MultiThumbnailView(RESTDispatch):
         total_image.save(tmp, 'jpeg', quality=95)
         tmp.seek(0)
 
-        cache.set('multi_image_%s' % image_ids, tmp.getvalue())
-        cache.set('multi_image_offsets_%s' % image_ids, json.dumps(offset_data, separators=(',',':')))
+        cache.set(image_cache_key, tmp.getvalue())
+        cache.set(offsets_cache_key, json.dumps(offset_data, separators=(',',':')))
 
         return self.build_response(tmp.getvalue(), json.dumps(offset_data, separators=(',',':')))
 
