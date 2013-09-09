@@ -27,6 +27,7 @@ from spotseeker_server.views.search import SearchView
 from spotseeker_server.views.add_image import AddImageView
 from spotseeker_server.views.image import ImageView
 from spotseeker_server.views.thumbnail import ThumbnailView
+from spotseeker_server.views.thumbnail import MultiThumbnailView
 from spotseeker_server.views.null import NullView
 from spotseeker_server.views.all_spots import AllSpotsView
 from spotseeker_server.views.schema_gen import SchemaGenView
@@ -42,4 +43,5 @@ urlpatterns = patterns('',
     url(r'v1/spot/(?P<spot_id>\d+)/image/(?P<image_id>\d+)$', ImageView().run, name='spot-image'),
     url(r'v1/spot/(?P<spot_id>\d+)/image/(?P<image_id>\d+)/thumb/constrain/(?P<thumb_dimensions>.+)?$', ThumbnailView().run, {'constrain': True}),
     url(r'v1/spot/(?P<spot_id>\d+)/image/(?P<image_id>\d+)/thumb/(?P<thumb_dimensions>.+)?$', ThumbnailView().run, name='spot-image-thumb'),
+    url(r'v1/multi_image/(?P<image_ids>[\d,]+)/thumb/(?P<thumb_dimensions>.+)?$', MultiThumbnailView().run, { 'constrain': True }, name='multi-image-thumb'),
 )
