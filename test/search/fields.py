@@ -16,7 +16,7 @@
 from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
-from spotseeker_server.models import Spot, SpotExtendedInfo, SpotType
+from spotseeker_server.models import Spot, SpotExtendedInfo, SpotType, SpotMetaType
 import simplejson as json
 from django.test.utils import override_settings
 from mock import patch
@@ -254,3 +254,95 @@ class SpotSearchFieldTest(TestCase):
     #            self.assertEquals(response["Content-Type"], "application/json", "Has the json header")
     #            spots = json.loads(response.content)
     #            self.assertEquals(len(spots), 1, 'Finds 1 match searching on has_soda_fountain=true')
+
+    def test_no_spot_meta_type_search(self):
+        """ A search with no spot_meta_type param should return spacescout spots.
+        """
+        dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
+        with patch.object(models, 'cache', dummy_cache):
+            room_type = SpotType.objects.get_or_create(name='room')[0]
+            study_meta_type = SpotMetaType.objects.get_or_create(name='study')[0]
+            food_meta_type = SpotMetaType.objects.get_or_create(name='food')[0]
+
+            #spot1 of type room AND meta_type study
+            spot1 = Spot.objects.create(name="First Study Space", latitude=55, longitude=30)
+            spot1.spottypes.add(room_type)
+            spot1.spotmetatypes.add(study_meta_type)
+            spot1.save()
+
+            #spot2 of type room AND meta_type food
+            spot2 = Spot.objects.create(name="First Food Space", latitude=55, longitude=30)
+            spot2.spottypes.add(room_type)
+            spot2.spotmetatypes.add(food_meta_type)
+            spot2.save()
+
+            #spot3 of type room AND meta_type study and meta_type food
+            spot3 = Spot.objects.create(name="Second Study Space", latitude=55, longitude=30)
+            spot3.spottypes.add(room_type)
+            spot3.spotmetatypes.add(study_meta_type)
+            spot3.spotmetatypes.add(food_meta_type)
+            spot3.save()
+
+            #api search for type room and no meta type
+            client = Client()
+            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "type": "room"})
+            self.assertEqual("application/json", response["Content-Type"])
+            spots = json.loads(response.content)
+
+            #assert that only 1 and 3 are returned
+            self.assertEqual(len(spots), 2)
+            self.assertTrue(spot1.json_data_structure() in spots)
+            self.assertTrue(spot2.json_data_structure() not in spots)
+            self.assertTrue(spot3.json_data_structure() in spots)
+
+    def test_spot_meta_type_search(self):
+        """ A search with spot_meta_type params should return spots with those meta types.
+        """
+        dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
+        with patch.object(models, 'cache', dummy_cache):
+            room_type = SpotType.objects.get_or_create(name='room')[0]
+            study_meta_type = SpotMetaType.objects.get_or_create(name='study')[0]
+            food_meta_type = SpotMetaType.objects.get_or_create(name='food')[0]
+
+            #spot1 of type room AND meta_type study
+            spot1 = Spot.objects.create(name="First Study Space", latitude=55, longitude=30)
+            spot1.spottypes.add(room_type)
+            spot1.spotmetatypes.add(study_meta_type)
+            spot1.save()
+
+            #spot2 of type room AND meta_type food
+            spot2 = Spot.objects.create(name="First Food Space", latitude=55, longitude=30)
+            spot2.spottypes.add(room_type)
+            spot2.spotmetatypes.add(food_meta_type)
+            spot2.save()
+
+            #spot3 of type room AND meta_type study and meta_type food
+            spot3 = Spot.objects.create(name="Second Study Space", latitude=55, longitude=30)
+            spot3.spottypes.add(room_type)
+            spot3.spotmetatypes.add(study_meta_type)
+            spot3.spotmetatypes.add(food_meta_type)
+            spot3.save()
+
+            #api search for type room and meta type food
+            client = Client()
+            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": "food"})
+            self.assertEqual("application/json", response["Content-Type"])
+            spots = json.loads(response.content)
+
+            #assert that only 2 and 3 are returned
+            self.assertEqual(len(spots), 2)
+            self.assertTrue(spot1.json_data_structure() not in spots)
+            self.assertTrue(spot2.json_data_structure() in spots)
+            self.assertTrue(spot3.json_data_structure() in spots)
+
+            #api search for type room and both meta types
+            client = Client()
+            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": ["food", "study"]})
+            self.assertEqual("application/json", response["Content-Type"])
+            spots = json.loads(response.content)
+
+            #assert that 1, 2,  and 3 are returned
+            self.assertEqual(len(spots), 3)
+            self.assertTrue(spot1.json_data_structure() in spots)
+            self.assertTrue(spot2.json_data_structure() in spots)
+            self.assertTrue(spot3.json_data_structure() in spots)
