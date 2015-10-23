@@ -28,7 +28,7 @@ from spotseeker_server.org_filters import SearchFilterChain
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.db.models import Q
 from spotseeker_server.require_auth import *
-from spotseeker_server.models import Spot, SpotType
+from spotseeker_server.models import Spot, SpotType, SpotMetaType
 from pyproj import Geod
 from decimal import *
 from time import *
@@ -54,6 +54,12 @@ class SearchView(RESTDispatch):
 
         if len(request.GET) == 0:
             return JSONResponse([])
+
+        if len(SpotMetaType.objects.all()) == 0:
+            has_meta_type = False
+        else:
+            has_meta_type = True
+
         chain = SearchFilterChain(request)
         query = Spot.objects.all()
 
@@ -152,6 +158,14 @@ class SearchView(RESTDispatch):
                     q_obj |= type_q
                 query = query.filter(q_obj).distinct()
                 has_valid_search_param = True
+            elif key == "meta_type":
+                type_values = request.GET.getlist(key)
+                q_obj = Q()
+                type_qs = [Q(spotmetatypes__name__exact=v) for v in type_values]
+                for type_q in type_qs:
+                    q_obj |= type_q
+                query = query.filter(q_obj).distinct()
+                has_valid_search_param = True
             elif key == "building_name":
                 building_names = request.GET.getlist(key)
                 q_obj = Q()
@@ -180,6 +194,16 @@ class SearchView(RESTDispatch):
                 except Exception as e:
                     if not request.META['SERVER_NAME'] == 'testserver':
                         print >> sys.stderr, "E: ", e
+
+        # If no meta_type is explicitly requested, assume to return the default meta_type
+        if has_meta_type and 'meta_type' not in request.GET:
+            type_values = request.GET.getlist(key)
+            q_obj = Q()
+            type_qs = [Q(spotmetatypes__name__exact='study')]
+            for type_q in type_qs:
+                q_obj |= type_q
+            query = query.filter(q_obj).distinct()
+            has_valid_search_param = True
 
         # Always prefetch the related extended info
         query = query.select_related('SpotExtendedInfo')

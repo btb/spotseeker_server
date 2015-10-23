@@ -147,7 +147,7 @@ class UWSpotPUTTest(TransactionTestCase):
 
             response = c.get(self.url)
             self.assertEquals(json.loads(json_string)['extended_info'], json.loads(response.content)['extended_info'], "Doesn't update spot info with invalid extended info")
-            
+
             # test: invalid int value
             invalid_int = "invalid_int"
             invalid_int_json_string = '{"name":"%s","capacity":"%s","location": {"latitude": 55, "longitude": -30},"extended_info":{"has_whiteboards":"true","has_outlets":"true", "has_computers":"true", "num_computers":"%s","manager":"Sam","organization":"UW"}}' % (new_name, new_capacity, invalid_int)

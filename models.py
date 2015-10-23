@@ -63,11 +63,21 @@ class SpotType(models.Model):
         return self.name
 
 
+class SpotMetaType(models.Model):
+    """ The meta type of Spot. This allows different client apps to request only Spots that are intended to show in that client.
+    """
+    name = models.SlugField(max_length=50)
+
+    def __unicode__(self):
+        return self.name
+
+
 class Spot(models.Model):
     """ Represents a place for students to study.
     """
     name = models.CharField(max_length=100, blank=True)
     spottypes = models.ManyToManyField(SpotType, max_length=50, related_name='spots', blank=True, null=True)
+    spotmetatypes = models.ManyToManyField(SpotMetaType, max_length=50, related_name='spots_by_meta', blank=True, null=True)
     latitude = models.DecimalField(max_digits=11, decimal_places=8, null=True)
     longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True)
     height_from_sea_level = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
@@ -121,6 +131,9 @@ class Spot(models.Model):
             types = []
             for t in self.spottypes.all():
                 types.append(t.name)
+            metatypes = []
+            for t in self.spotmetatypes.all():
+                types.append(t.name)
 
             spot_json = {
                 "id": self.pk,
@@ -128,6 +141,7 @@ class Spot(models.Model):
                 "etag": self.etag,
                 "name": self.name,
                 "type": types,
+                "meta_type": metatypes,
                 "location": {
                     # If any changes are made to this location dict, MAKE SURE to reflect those changes in the
                     # location_descriptors list in views/schema_gen.py
@@ -153,7 +167,7 @@ class Spot(models.Model):
 
     def update_rating(self):
         data = SpaceReview.objects.filter(space=self, is_published=True, is_deleted=False).aggregate(total=Sum('rating'), count=Count('rating'))
-        
+
         if not data['total']:
             return
 
@@ -177,7 +191,6 @@ class Spot(models.Model):
         except ObjectDoesNotExist as ex:
             extended_info = SpotExtendedInfo.objects.create(spot=self, key="review_count", value=data['count'])
 
-
     def delete(self, *args, **kwargs):
         cache.delete(self.pk)
         super(Spot, self).delete(*args, **kwargs)
@@ -199,7 +212,7 @@ class FavoriteSpot(models.Model):
     def json_data_structure(self):
         """ Returns the JSON for the Spot that is a Favorite.
         """
-        return self.spot.json_data_structure();
+        return self.spot.json_data_structure()
 
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -363,21 +376,20 @@ class SpaceReview(models.Model):
     review = models.CharField(max_length=1000, default="")
     original_review = models.CharField(max_length=1000, default="")
     rating = models.IntegerField(validators=[
-                                    MaxValueValidator(5),
-                                    MinValueValidator(1)
-                                 ])
+                                 MaxValueValidator(5),
+                                 MinValueValidator(1)])
     date_submitted = models.DateTimeField(auto_now_add=True)
     date_published = models.DateTimeField(null=True)
     is_published = models.BooleanField()
     is_deleted = models.BooleanField()
 
     def json_data_structure(self):
-        submitted = self.date_submitted.replace(microsecond = 0)
+        submitted = self.date_submitted.replace(microsecond=0)
         return {
             'reviewer': self.reviewer.username,
             'review': self.review,
             'rating': self.rating,
-            'date_submitted':submitted.isoformat(),
+            'date_submitted': submitted.isoformat(),
         }
 
     def full_json_data_structure(self):
@@ -398,7 +410,7 @@ class SpaceReview(models.Model):
             data['date_published'] = self.date_published.isoformat()
 
         return data
- 
+
 
 class SharedSpace(models.Model):
     space = models.ForeignKey(Spot)
