@@ -261,7 +261,7 @@ class SpotSearchFieldTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             room_type = SpotType.objects.get_or_create(name='room')[0]
-            default_meta_type = SpotMetaType.objects.get_or_create(name='default')[0]
+            default_meta_type = SpotMetaType.objects.get_or_create(name=getattr(settings, 'META_TYPE', 'default'))[0]
             food_meta_type = SpotMetaType.objects.get_or_create(name='food')[0]
 
             #spot1 of type room AND meta_type default
@@ -350,6 +350,7 @@ class SpotSearchFieldTest(TestCase):
     @override_settings(META_TYPE='study')
     def test_no_custom_spot_meta_type_search(self):
         """ A search with no spot_meta_type param should return spacescout spots.
+            This test confirms that this works with a custom META_TYPE in settings.
         """
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
@@ -391,6 +392,7 @@ class SpotSearchFieldTest(TestCase):
     @override_settings(META_TYPE='study')
     def test_custom_spot_meta_type_search(self):
         """ A search with spot_meta_type params should return spots with those meta types.
+            This test confirms that this works with a custom META_TYPE in settings.
         """
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
