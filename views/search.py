@@ -199,7 +199,7 @@ class SearchView(RESTDispatch):
         if has_meta_type and 'meta_type' not in request.GET:
             type_values = request.GET.getlist(key)
             q_obj = Q()
-            type_qs = [Q(spotmetatypes__name__exact='default')]
+            type_qs = [Q(spotmetatypes__name__exact=getattr(settings, 'META_TYPE', 'default'))]
             for type_q in type_qs:
                 q_obj |= type_q
             query = query.filter(q_obj).distinct()
