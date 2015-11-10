@@ -261,13 +261,13 @@ class SpotSearchFieldTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             room_type = SpotType.objects.get_or_create(name='room')[0]
-            study_meta_type = SpotMetaType.objects.get_or_create(name='study')[0]
+            default_meta_type = SpotMetaType.objects.get_or_create(name='default')[0]
             food_meta_type = SpotMetaType.objects.get_or_create(name='food')[0]
 
-            #spot1 of type room AND meta_type study
+            #spot1 of type room AND meta_type default
             spot1 = Spot.objects.create(name="First Study Space", latitude=55, longitude=30)
             spot1.spottypes.add(room_type)
-            spot1.spotmetatypes.add(study_meta_type)
+            spot1.spotmetatypes.add(default_meta_type)
             spot1.save()
 
             #spot2 of type room AND meta_type food
@@ -276,10 +276,10 @@ class SpotSearchFieldTest(TestCase):
             spot2.spotmetatypes.add(food_meta_type)
             spot2.save()
 
-            #spot3 of type room AND meta_type study and meta_type food
+            #spot3 of type room AND meta_type default and meta_type food
             spot3 = Spot.objects.create(name="Second Study Space", latitude=55, longitude=30)
             spot3.spottypes.add(room_type)
-            spot3.spotmetatypes.add(study_meta_type)
+            spot3.spotmetatypes.add(default_meta_type)
             spot3.spotmetatypes.add(food_meta_type)
             spot3.save()
 
@@ -301,13 +301,13 @@ class SpotSearchFieldTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             room_type = SpotType.objects.get_or_create(name='room')[0]
-            study_meta_type = SpotMetaType.objects.get_or_create(name='study')[0]
+            default_meta_type = SpotMetaType.objects.get_or_create(name='default')[0]
             food_meta_type = SpotMetaType.objects.get_or_create(name='food')[0]
 
-            #spot1 of type room AND meta_type study
+            #spot1 of type room AND meta_type default
             spot1 = Spot.objects.create(name="First Study Space", latitude=55, longitude=30)
             spot1.spottypes.add(room_type)
-            spot1.spotmetatypes.add(study_meta_type)
+            spot1.spotmetatypes.add(default_meta_type)
             spot1.save()
 
             #spot2 of type room AND meta_type food
@@ -316,10 +316,10 @@ class SpotSearchFieldTest(TestCase):
             spot2.spotmetatypes.add(food_meta_type)
             spot2.save()
 
-            #spot3 of type room AND meta_type study and meta_type food
+            #spot3 of type room AND meta_type default and meta_type food
             spot3 = Spot.objects.create(name="Second Study Space", latitude=55, longitude=30)
             spot3.spottypes.add(room_type)
-            spot3.spotmetatypes.add(study_meta_type)
+            spot3.spotmetatypes.add(default_meta_type)
             spot3.spotmetatypes.add(food_meta_type)
             spot3.save()
 
@@ -337,7 +337,7 @@ class SpotSearchFieldTest(TestCase):
 
             #api search for type room and both meta types
             client = Client()
-            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": ["food", "study"]})
+            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": ["food", "default"]})
             self.assertEqual("application/json", response["Content-Type"])
             spots = json.loads(response.content)
 
