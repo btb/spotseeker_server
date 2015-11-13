@@ -17,11 +17,12 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from django.test.client import Client
 from django.utils.unittest import skipIf
-from spotseeker_server.models import Spot, SpotAvailableHours
+from spotseeker_server.models import Spot, SpotAvailableHours, SpotMetaType
 import simplejson as json
 from datetime import datetime, timedelta
 import time
 from mock import patch
+from django.conf import settings
 from django.core import cache
 from spotseeker_server import models
 
@@ -30,6 +31,9 @@ from spotseeker_server import models
 class SpotHoursOpenUntilTest(TestCase):
     """ Tests search requests for spots that are open at a particular time.
     """
+    def setUp(self):
+        default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+        self.default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
 
     @skipIf(datetime.now().hour + 3 > 23 or datetime.now().hour < 3, "Skip open_at tests due to the time of day")
     def test_open_until(self):
@@ -37,6 +41,7 @@ class SpotHoursOpenUntilTest(TestCase):
         with patch.object(models, 'cache', dummy_cache):
             # Create a spot that isn't open now but will be in an hour.
             spot = Spot.objects.create(name="This spot is open later")
+            spot.spotmetatypes.add(self.default_meta_type)
             now = datetime.now()
             spot_open = datetime.time(now + timedelta(hours=1))
             spot_close = datetime.time(now + timedelta(hours=3))
@@ -90,6 +95,7 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window")
+            spot.spotmetatypes.add(self.default_meta_type)
 
             SpotAvailableHours.objects.create(spot=spot, day="m", start_time="09:30:00", end_time="13:30:00")
 
@@ -109,6 +115,7 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window gap")
+            spot.spotmetatypes.add(self.default_meta_type)
 
             SpotAvailableHours.objects.create(spot=spot, day="m", start_time="09:30:00", end_time="10:30:00")
             SpotAvailableHours.objects.create(spot=spot, day="m", start_time="11:30:00", end_time="13:30:00")
@@ -129,6 +136,8 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window - multiple days")
+            spot.spotmetatypes.add(self.default_meta_type)
+
 
             SpotAvailableHours.objects.create(spot=spot, day="m", start_time="09:30:00", end_time="23:59:59")
             SpotAvailableHours.objects.create(spot=spot, day="t", start_time="00:00:00", end_time="14:00:00")
@@ -149,6 +158,7 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window - multiple days")
+            spot.spotmetatypes.add(self.default_meta_type)
 
             SpotAvailableHours.objects.create(spot=spot, day="m", start_time="09:30:00", end_time="22:59:59")
             SpotAvailableHours.objects.create(spot=spot, day="t", start_time="00:00:00", end_time="14:00:00")
@@ -169,6 +179,7 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window - multiple days")
+            spot.spotmetatypes.add(self.default_meta_type)
 
             SpotAvailableHours.objects.create(spot=spot, day="m", start_time="09:30:00", end_time="23:59:59")
             SpotAvailableHours.objects.create(spot=spot, day="t", start_time="00:00:00", end_time="23:59:59")
@@ -191,6 +202,7 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window - multiple days")
+            spot.spotmetatypes.add(self.default_meta_type)
 
             SpotAvailableHours.objects.create(spot=spot, day="m", start_time="09:30:00", end_time="23:59:59")
             SpotAvailableHours.objects.create(spot=spot, day="t", start_time="00:00:00", end_time="14:00:00")
@@ -214,6 +226,7 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window - multiple days")
+            spot.spotmetatypes.add(self.default_meta_type)
 
             SpotAvailableHours.objects.create(spot=spot, day="f", start_time="09:30:00", end_time="23:59:59")
             SpotAvailableHours.objects.create(spot=spot, day="sa", start_time="00:00:00", end_time="23:59:59")
@@ -236,6 +249,7 @@ class SpotHoursOpenUntilTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot = Spot.objects.create(name="Spot with window - multiple days")
+            spot.spotmetatypes.add(self.default_meta_type)
 
             SpotAvailableHours.objects.create(spot=spot, day="f", start_time="09:30:00", end_time="23:59:59")
             SpotAvailableHours.objects.create(spot=spot, day="sa", start_time="00:00:00", end_time="14:00:00")

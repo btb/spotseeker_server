@@ -17,7 +17,7 @@ from django.test import TestCase
 from django.utils.unittest import skipIf
 from django.conf import settings
 from django.test.client import Client
-from spotseeker_server.models import Spot, SpotAvailableHours
+from spotseeker_server.models import Spot, SpotAvailableHours, SpotMetaType
 import simplejson as json
 from datetime import datetime
 import datetime as alternate_date
@@ -32,16 +32,23 @@ from spotseeker_server import models
 
 @override_settings(SPOTSEEKER_AUTH_MODULE='spotseeker_server.auth.all_ok')
 class SpotHoursOpenNowLocationTest(TestCase):
+    def setUp(self):
+        default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+        self.default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
 
     @skipIf(datetime.now().hour + 2 > 23 or datetime.now().hour < 2, "Skip this test due to the time of day")
     def test_open_now(self):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             open_in_range_spot = Spot.objects.create(name="This spot is open now", latitude=Decimal('40.0000898315'), longitude=Decimal('-50.0'))
+            open_in_range_spot.spotmetatypes.add(self.default_meta_type)
             closed_in_range_spot = Spot.objects.create(name="This spot is closed now", latitude=Decimal('40.0000898315'), longitude=Decimal('-50.0'))
+            closed_in_range_spot.spotmetatypes.add(self.default_meta_type)
 
             open_outof_range_spot = Spot.objects.create(name="This spot is open now", latitude=Decimal('45.0000898315'), longitude=Decimal('-55.0'))
+            open_outof_range_spot.spotmetatypes.add(self.default_meta_type)
             closed_outof_range_spot = Spot.objects.create(name="This spot is closed now", latitude=Decimal('45.0000898315'), longitude=Decimal('-55.0'))
+            closed_outof_range_spot.spotmetatypes.add(self.default_meta_type)
 
             now = datetime.time(datetime.now())
 
