@@ -112,4 +112,5 @@ admin.site.register(SpotExtendedInfo, SpotExtendedInfoAdmin)
 
 
 admin.site.register(SpotType)
+admin.site.register(SpotMetaType)
 admin.site.register(TrustedOAuthClient)

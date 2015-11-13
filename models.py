@@ -63,11 +63,22 @@ class SpotType(models.Model):
         return self.name
 
 
+class SpotMetaType(models.Model):
+    """ A MetaType defines which client app a Spot should be served to. clients
+        can request this by passing meta_type=something as a query param.
+    """
+    name = models.SlugField(max_length=50)
+
+    def __unicode__(self):
+        return self.name
+
+
 class Spot(models.Model):
     """ Represents a place for students to study.
     """
     name = models.CharField(max_length=100, blank=True)
     spottypes = models.ManyToManyField(SpotType, max_length=50, related_name='spots', blank=True, null=True)
+    spotmetatypes = models.ManyToManyField(SpotMetaType, related_name='spots_set', blank=True, null=True)
     latitude = models.DecimalField(max_digits=11, decimal_places=8, null=True)
     longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True)
     height_from_sea_level = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
@@ -153,7 +164,7 @@ class Spot(models.Model):
 
     def update_rating(self):
         data = SpaceReview.objects.filter(space=self, is_published=True, is_deleted=False).aggregate(total=Sum('rating'), count=Count('rating'))
-        
+
         if not data['total']:
             return
 
@@ -398,7 +409,7 @@ class SpaceReview(models.Model):
             data['date_published'] = self.date_published.isoformat()
 
         return data
- 
+
 
 class SharedSpace(models.Model):
     space = models.ForeignKey(Spot)

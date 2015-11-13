@@ -261,7 +261,8 @@ class SpotSearchFieldTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             room_type = SpotType.objects.get_or_create(name='room')[0]
-            default_meta_type = SpotMetaType.objects.get_or_create(name='default')[0]
+            default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
             food_meta_type = SpotMetaType.objects.get_or_create(name='food')[0]
 
             #spot1 of type room AND meta_type default
@@ -301,7 +302,8 @@ class SpotSearchFieldTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             room_type = SpotType.objects.get_or_create(name='room')[0]
-            default_meta_type = SpotMetaType.objects.get_or_create(name='default')[0]
+            default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
             food_meta_type = SpotMetaType.objects.get_or_create(name='food')[0]
 
             #spot1 of type room AND meta_type default
@@ -337,7 +339,7 @@ class SpotSearchFieldTest(TestCase):
 
             #api search for type room and both meta types
             client = Client()
-            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": ["food", "default"]})
+            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": ["food", "{0}}".format(default_meta_name)]})
             self.assertEqual("application/json", response["Content-Type"])
             spots = json.loads(response.content)
 
