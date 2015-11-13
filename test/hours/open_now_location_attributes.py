@@ -37,13 +37,20 @@ class SpotHoursOpenNowLocationAttributesTest(TestCase):
     def test_open_now(self):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
+            default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            default_meta_type = models.SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
             open_in_range_matched_spot = Spot.objects.create(name="Find this: Atlantic", latitude=Decimal('40.0000898315'), longitude=Decimal('-50.0'))
+            open_in_range_matched_spot.spotmetatypes.add(default_meta_type)
             open_in_range_no_match_spot = Spot.objects.create(name="Don't find this", latitude=Decimal('40.0000898315'), longitude=Decimal('-50.0'))
+            open_in_range_no_match_spot.spotmetatypes.add(default_meta_type)
 
             closed_in_range_spot = Spot.objects.create(name="This spot is closed now: Atlantic", latitude=Decimal('40.0000898315'), longitude=Decimal('-50.0'))
+            closed_in_range_spot.spotmetatypes.add(default_meta_type)
 
             open_outof_range_spot = Spot.objects.create(name="This spot is open now: Atlantic", latitude=Decimal('45.0000898315'), longitude=Decimal('-55.0'))
+            open_outof_range_spot.spotmetatypes.add(default_meta_type)
             closed_outof_range_spot = Spot.objects.create(name="This spot is closed now: Atlantic", latitude=Decimal('45.0000898315'), longitude=Decimal('-55.0'))
+            closed_outof_range_spot.spotmetatypes.add(default_meta_type)
 
             now = datetime.time(datetime.now())
 

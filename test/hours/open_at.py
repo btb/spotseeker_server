@@ -17,12 +17,13 @@ from django.test import TestCase
 from django.test.utils import override_settings
 from django.test.client import Client
 from django.utils.unittest import skipIf
-from spotseeker_server.models import Spot, SpotAvailableHours
+from spotseeker_server.models import Spot, SpotAvailableHours, SpotMetaType
 import simplejson as json
 from datetime import datetime, timedelta
 import time
 from django.test.utils import override_settings
 from mock import patch
+from django.conf import settings
 from django.core import cache
 from spotseeker_server import models
 
@@ -36,8 +37,11 @@ class SpotHoursOpenAtTest(TestCase):
     def test_open_at(self):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
+            default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
             # Create a spot that isn't open now but will be in an hour.
             spot = Spot.objects.create(name="This spot is open later")
+            spot.spotmetatypes.add(default_meta_type)
             now = datetime.now()
             spot_open = datetime.time(now + timedelta(hours=1))
             spot_close = datetime.time(now + timedelta(hours=3))

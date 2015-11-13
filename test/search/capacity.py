@@ -16,7 +16,7 @@
 from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
-from spotseeker_server.models import Spot, SpotExtendedInfo, SpotType
+from spotseeker_server.models import Spot, SpotExtendedInfo, SpotType, SpotMetaType
 import simplejson as json
 from django.test.utils import override_settings
 from mock import patch
@@ -29,19 +29,27 @@ class SpotSearchCapacityTest(TestCase):
     def test_capacity(self):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
+            default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
+
             spot1 = Spot.objects.create(name="capacity: 1", capacity=1)
+            spot1.spotmetatypes.add(default_meta_type)
             spot1.save()
 
             spot2 = Spot.objects.create(name="capacity: 2", capacity=2)
+            spot2.spotmetatypes.add(default_meta_type)
             spot2.save()
 
             spot3 = Spot.objects.create(name="capacity: 3", capacity=3)
+            spot3.spotmetatypes.add(default_meta_type)
             spot3.save()
 
             spot4 = Spot.objects.create(name="capacity: 4", capacity=4)
+            spot4.spotmetatypes.add(default_meta_type)
             spot4.save()
 
             spot5 = Spot.objects.create(name="capacity: 50", capacity=50)
+            spot5.spotmetatypes.add(default_meta_type)
             spot5.save()
 
             c = Client()

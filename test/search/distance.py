@@ -16,7 +16,7 @@
 from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
-from spotseeker_server.models import Spot
+from spotseeker_server.models import Spot, SpotMetaType
 import simplejson as json
 from decimal import *
 from django.test.utils import override_settings
@@ -112,7 +112,8 @@ class SpotSearchDistanceTest(TestCase):
     def test_distances(self):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-
+            default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
             # Spots are in the atlantic to make them less likely to collide with actual spots
             center_lat = 30.000000
             center_long = -40.000000
@@ -125,33 +126,46 @@ class SpotSearchDistanceTest(TestCase):
             # Creating these from the outside in, so things that sort by primary key will give bad results for things that should be sorted by distance
             for i in range(0, 100):
                 far_out = Spot.objects.create(name="Far Out %s" % i, latitude=Decimal('30.0010779783'), longitude=Decimal('-40.0'))
+                far_out.spotmetatypes.add(default_meta_type)
                 far_out.save()
 
             outer_top = Spot.objects.create(name="Outer Top", latitude=Decimal('30.0008983153'), longitude=Decimal('-40.0'))
+            outer_top.spotmetatypes.add(default_meta_type)
             outer_top.save()
             outer_bottom = Spot.objects.create(name="Outer Bottom", latitude=Decimal('29.9991016847'), longitude=Decimal('-40.0'))
+            outer_bottom.spotmetatypes.add(default_meta_type)
             outer_bottom.save()
             outer_left = Spot.objects.create(name="Outer Left", latitude=Decimal('30.0'), longitude=Decimal('-40.0010372851'))
+            outer_left.spotmetatypes.add(default_meta_type)
             outer_left.save()
             outer_right = Spot.objects.create(name="Outer Right", latitude=Decimal('30.0'), longitude=Decimal('-39.9989627149'))
+            outer_right.spotmetatypes.add(default_meta_type)
             outer_right.save()
 
             mid_top = Spot.objects.create(name="Mid Top", latitude=Decimal(' 30.0004491576'), longitude=Decimal('-40.0'))
+            mid_top.spotmetatypes.add(default_meta_type)
             mid_top.save()
             mid_bottom = Spot.objects.create(name="Mid Bottom", latitude=Decimal('29.9995508424'), longitude=Decimal('-40.0'))
+            mid_bottom.spotmetatypes.add(default_meta_type)
             mid_bottom.save()
             mid_left = Spot.objects.create(name="Mid Left", latitude=Decimal('30.0'), longitude=Decimal('-40.0005186426'))
+            mid_left.spotmetatypes.add(default_meta_type)
             mid_left.save()
             mid_right = Spot.objects.create(name="Mid Right", latitude=Decimal('30.0'), longitude=Decimal('-39.9994813574'))
+            mid_right.spotmetatypes.add(default_meta_type)
             mid_right.save()
 
             inner_top = Spot.objects.create(name="Inner Top", latitude=Decimal('30.0000898315'), longitude=Decimal('-40.0'))
+            inner_top.spotmetatypes.add(default_meta_type)
             inner_top.save()
             inner_bottom = Spot.objects.create(name="Inner Bottom", latitude=Decimal('29.9999101685'), longitude=Decimal('-40.0'))
+            inner_bottom.spotmetatypes.add(default_meta_type)
             inner_bottom.save()
             inner_left = Spot.objects.create(name="Inner Left", latitude=Decimal('30.0'), longitude=Decimal('-40.0001037285'))
+            inner_left.spotmetatypes.add(default_meta_type)
             inner_left.save()
             inner_right = Spot.objects.create(name="Inner Right", latitude=Decimal('30.0'), longitude=Decimal('-39.9998962715'))
+            inner_right.spotmetatypes.add(default_meta_type)
             inner_right.save()
 
             # Testing to make sure too small of a radius returns nothing
