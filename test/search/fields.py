@@ -20,6 +20,7 @@ from spotseeker_server.models import Spot, SpotExtendedInfo, SpotType, SpotMetaT
 import simplejson as json
 from django.test.utils import override_settings
 from mock import patch
+from django.conf import settings
 from django.core import cache
 from spotseeker_server import models
 
@@ -27,19 +28,27 @@ from spotseeker_server import models
 @override_settings(SPOTSEEKER_AUTH_MODULE='spotseeker_server.auth.all_ok')
 class SpotSearchFieldTest(TestCase):
 
+    def setUp(self):
+        default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+        self.default_meta_type = models.SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
+
     def test_fields(self):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             spot1 = Spot.objects.create(name="This is a searchable Name - OUGL")
+            spot1.spotmetatypes.add(self.default_meta_type)
             spot1.save()
 
             spot2 = Spot.objects.create(name="This OUGL is an alternative spot")
+            spot2.spotmetatypes.add(self.default_meta_type)
             spot2.save()
 
             spot3 = Spot.objects.create(name="3rd spot")
+            spot3.spotmetatypes.add(self.default_meta_type)
             spot3.save()
 
             spot4 = Spot.objects.create(name="OUGL  - 3rd spot in the site")
+            spot4.spotmetatypes.add(self.default_meta_type)
             spot4.save()
 
             c = Client()
@@ -61,11 +70,13 @@ class SpotSearchFieldTest(TestCase):
 
             # This part is essentially imagination...
             spot5 = Spot.objects.create(name="Has whiteboards")
+            spot5.spotmetatypes.add(self.default_meta_type)
             attr = SpotExtendedInfo(key="has_whiteboards", value=True, spot=spot5)
             attr.save()
             spot5.save()
 
             spot6 = Spot.objects.create(name="Has no whiteboards")
+            spot6.spotmetatypes.add(self.default_meta_type)
             attr = SpotExtendedInfo(key="has_whiteboards", value=False, spot=spot6)
             attr.save()
             spot6.save()
@@ -79,6 +90,7 @@ class SpotSearchFieldTest(TestCase):
             self.assertEquals(spots[0]['id'], spot5.pk, "Finds spot5 w/ a whiteboard")
 
             spot7 = Spot.objects.create(name="Text search for the title - Odegaard Undergraduate Library and Learning Commons")
+            spot7.spotmetatypes.add(self.default_meta_type)
             attr = SpotExtendedInfo(key="has_whiteboards", value=True, spot=spot7)
             attr.save()
             spot7.save()
@@ -113,18 +125,22 @@ class SpotSearchFieldTest(TestCase):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
             natural = Spot.objects.create(name="Has field value: natural")
+            natural.spotmetatypes.add(self.default_meta_type)
             attr = SpotExtendedInfo(key="lightingmultifieldtest", value="natural", spot=natural)
             attr.save()
 
             artificial = Spot.objects.create(name="Has field value: artificial")
+            artificial.spotmetatypes.add(self.default_meta_type)
             attr = SpotExtendedInfo(key="lightingmultifieldtest", value="artificial", spot=artificial)
             attr.save()
 
             other = Spot.objects.create(name="Has field value: other")
+            other.spotmetatypes.add(self.default_meta_type)
             attr = SpotExtendedInfo(key="lightingmultifieldtest", value="other", spot=other)
             attr.save()
 
             darkness = Spot.objects.create(name="Has field value: darkness")
+            darkness.spotmetatypes.add(self.default_meta_type)
 
             c = Client()
             response = c.get("/api/v1/spot", {'extended_info:lightingmultifieldtest': 'natural'})
@@ -179,16 +195,20 @@ class SpotSearchFieldTest(TestCase):
             never_used_type = SpotType.objects.get_or_create(name='never_used_testing')[0]
 
             spot1 = Spot.objects.create(name='Spot1 is a Cafe for multi type test')
+            spot1.spotmetatypes.add(self.default_meta_type)
             spot1.spottypes.add(cafe_type)
             spot1.save()
             spot2 = Spot.objects.create(name='Spot 2 is an Open space for multi type test')
+            spot2.spotmetatypes.add(self.default_meta_type)
             spot2.spottypes.add(open_type)
             spot2.save()
             spot3 = Spot.objects.create(name='Spot 3 is an Open cafe for multi type test')
+            spot3.spotmetatypes.add(self.default_meta_type)
             spot3.spottypes.add(cafe_type)
             spot3.spottypes.add(open_type)
             spot3.save()
             spot4 = Spot.objects.create(name='Spot 4 should never get returned')
+            spot4.spotmetatypes.add(self.default_meta_type)
             spot4.spottypes.add(never_used_type)
             spot4.save()
 
@@ -214,14 +234,19 @@ class SpotSearchFieldTest(TestCase):
         with patch.object(models, 'cache', dummy_cache):
             # Building A
             spot1 = Spot.objects.create(name='Room A403', building_name='Building A')
+            spot1.spotmetatypes.add(self.default_meta_type)
             spot2 = Spot.objects.create(name='Room A589', building_name='Building A')
+            spot2.spotmetatypes.add(self.default_meta_type)
 
             # Building B
             spot3 = Spot.objects.create(name='Room B328', building_name='Building B')
+            spot3.spotmetatypes.add(self.default_meta_type)
             spot4 = Spot.objects.create(name='Room B943', building_name='Building B')
+            spot4.spotmetatypes.add(self.default_meta_type)
 
             # Building C - just because
             spot5 = Spot.objects.create(name='Room C483', building_name='Building C')
+            spot5.spotmetatypes.add(self.default_meta_type)
 
             c = Client()
             response = c.get("/api/v1/spot", {"building_name": ['Building A', 'Building B']})

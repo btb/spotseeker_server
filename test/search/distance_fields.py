@@ -16,7 +16,7 @@
 from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
-from spotseeker_server.models import Spot
+from spotseeker_server.models import Spot, SpotMetaType
 import simplejson as json
 from decimal import *
 
@@ -26,16 +26,21 @@ class SpotSearchDistanceFieldTest(TestCase):
     def test_distances(self):
         # Spots are in the atlantic to make them less likely to collide with actual spots
         with self.settings(SPOTSEEKER_AUTH_MODULE='spotseeker_server.auth.all_ok'):
+            default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            default_meta_type = SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
             center_lat = 31.000000
             center_long = -41.000000
 
             inner_top = Spot.objects.create(name="Atlantic Location 1", latitude=Decimal('31.0000898315'), longitude=Decimal('-41.0'))
+            inner_top.spotmetatypes.add(default_meta_type)
             inner_top.save()
 
             inner_top2 = Spot.objects.create(name="Alternate name of AL1", latitude=Decimal('31.0000898315'), longitude=Decimal('-41.0'))
+            inner_top2.spotmetatypes.add(default_meta_type)
             inner_top2.save()
 
             mid_top = Spot.objects.create(name="Atlantic Location 2", latitude=Decimal('34.0004491576'), longitude=Decimal('-44.0'))
+            mid_top.spotmetatypes.add(default_meta_type)
             mid_top.save()
 
             c = Client()

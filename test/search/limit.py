@@ -19,6 +19,7 @@ from spotseeker_server.models import Spot
 import simplejson as json
 from django.test.utils import override_settings
 from mock import patch
+from django.conf import settings
 from django.core import cache
 from spotseeker_server import models
 
@@ -26,11 +27,14 @@ from spotseeker_server import models
 @override_settings(SPOTSEEKER_AUTH_MODULE='spotseeker_server.auth.all_ok')
 class SpotSearchLimitTest(TestCase):
     def setUp(self):
+        default_meta_name = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+        default_meta_type = models.SpotMetaType.objects.get_or_create(name=default_meta_name)[0]
         num_spots = 25
         self.num_spots = num_spots
         for i in range(num_spots):
             i = i + 1
-            Spot.objects.create(name="spot %s" % (i))
+            spot = Spot.objects.create(name="spot %s" % (i))
+            spot.spotmetatypes.add(default_meta_type)
 
     def test_more_than_20_no_limit(self):
         dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
