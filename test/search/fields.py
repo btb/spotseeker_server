@@ -339,7 +339,7 @@ class SpotSearchFieldTest(TestCase):
 
             #api search for type room and both meta types
             client = Client()
-            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": ["food", "{0}}".format(default_meta_name)]})
+            response = client.get("/api/v1/spot", {"center_latitude": 55.1, "center_longitude": 30.1, "distance": 100000, "meta_type": ["food", "{0}".format(default_meta_name)]})
             self.assertEqual("application/json", response["Content-Type"])
             spots = json.loads(response.content)
 

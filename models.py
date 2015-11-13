@@ -132,6 +132,9 @@ class Spot(models.Model):
             types = []
             for t in self.spottypes.all():
                 types.append(t.name)
+            metatypes = []
+            for t in self.spotmetatypes.all():
+                metatypes.append(t.name)
 
             spot_json = {
                 "id": self.pk,
@@ -139,6 +142,7 @@ class Spot(models.Model):
                 "etag": self.etag,
                 "name": self.name,
                 "type": types,
+                "meta_type": metatypes,
                 "location": {
                     # If any changes are made to this location dict, MAKE SURE to reflect those changes in the
                     # location_descriptors list in views/schema_gen.py

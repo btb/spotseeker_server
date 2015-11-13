@@ -28,7 +28,7 @@ from spotseeker_server.org_filters import SearchFilterChain
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.db.models import Q
 from spotseeker_server.require_auth import *
-from spotseeker_server.models import Spot, SpotType
+from spotseeker_server.models import Spot, SpotType, SpotMetaType
 from pyproj import Geod
 from decimal import *
 from time import *
@@ -148,6 +148,14 @@ class SearchView(RESTDispatch):
                 type_values = request.GET.getlist(key)
                 q_obj = Q()
                 type_qs = [Q(spottypes__name__exact=v) for v in type_values]
+                for type_q in type_qs:
+                    q_obj |= type_q
+                query = query.filter(q_obj).distinct()
+                has_valid_search_param = True
+            elif key == "meta_type":
+                type_values = request.GET.getlist(key)
+                q_obj = Q()
+                type_qs = [Q(spotmetatypes__name__exact=v) for v in type_values]
                 for type_q in type_qs:
                     q_obj |= type_q
                 query = query.filter(q_obj).distinct()
