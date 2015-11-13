@@ -189,6 +189,17 @@ class SearchView(RESTDispatch):
                     if not request.META['SERVER_NAME'] == 'testserver':
                         print >> sys.stderr, "E: ", e
 
+        if 'meta_type' not in request.GET:
+            type_values = request.GET.getlist(key)
+            q_obj = Q()
+            default_meta_type = getattr(settings, 'SS_DEFAULT_META_TYPE', 'default')
+            type_qs = [Q(spotmetatypes__name__exact=default_meta_type)]
+            for type_q in type_qs:
+                q_obj |= type_q
+            query = query.filter(q_obj).distinct()
+            has_valid_search_param = True
+
+
         # Always prefetch the related extended info
         query = query.select_related('SpotExtendedInfo')
 
