@@ -198,6 +198,7 @@ class SpotView(RESTDispatch):
         )
 
         self._build_spot_types(json_values, spot, partial_update)
+        self._build_spot_meta_types(json_values, spot, partial_update)
         self._build_spot_location(json_values)
 
         spot_pre_save.send(
@@ -283,5 +284,22 @@ class SpotView(RESTDispatch):
                 try:
                     t = SpotType.objects.get(name=name)
                     json_values['spottypes'].append(t.pk)
+                except:
+                    pass
+
+    def _build_spot_meta_types(self, json_values, spot, partial_update):
+        """Fixup the 'meta_type' array into IDs"""
+        types = json_values.pop('meta_type', None)
+        if not partial_update and types is None:
+            types = ()
+        elif isinstance(types, basestring):
+            types = (types,)
+
+        if not partial_update or (partial_update and types is not None):
+            json_values['spotmetatypes'] = []
+            for name in types:
+                try:
+                    t = SpotMetaType.objects.get(name=name)
+                    json_values['spotmetatypes'].append(t.pk)
                 except:
                     pass

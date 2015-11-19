@@ -16,7 +16,7 @@
 from django.test import TestCase
 from django.conf import settings
 from django.test.client import Client
-from spotseeker_server.models import Spot
+from spotseeker_server.models import Spot, SpotMetaType
 import simplejson as json
 import random
 from django.test.utils import override_settings
@@ -39,22 +39,64 @@ class SpotPOSTTest(TestCase):
             c = Client()
             new_name = "testing POST name: {0}".format(random.random())
             new_capacity = 10
-            response = c.post('/api/v1/spot/', '{"name":"%s","capacity":"%d", "location": {"latitude": 50, "longitude": -30} }' % (new_name, new_capacity), content_type="application/json", follow=False)
+            new_meta = "meta{0}".format(random.random())
+            SpotMetaType.objects.create(name=new_meta)
+            response = c.post('/api/v1/spot/', '{"name":"%s","capacity":"%d", "meta_type":"%s", "location": {"latitude": 50, "longitude": -30} }' % (new_name, new_capacity, new_meta), content_type="application/json", follow=False)
 
-            self.assertEquals(response.status_code, 201, "Gives a Created response to creating a Spot")
+            self.assertEqual(response.status_code, 201, "Gives a Created response to creating a Spot")
             self.assertIn("Location", response, "The response has a location header")
 
             self.spot = Spot.objects.get(name=new_name)
 
-            self.assertEquals(response["Location"], 'http://testserver' + self.spot.rest_url(), "The uri for the new spot is correct")
+            self.assertEqual(response["Location"], 'http://testserver' + self.spot.rest_url(), "The uri for the new spot is correct")
 
             get_response = c.get(response["Location"])
-            self.assertEquals(get_response.status_code, 200, "OK in response to GETing the new spot")
+            self.assertEqual(get_response.status_code, 200, "OK in response to GETing the new spot")
 
             spot_json = json.loads(get_response.content)
 
-            self.assertEquals(spot_json["name"], new_name, "The right name was stored")
-            self.assertEquals(spot_json["capacity"], new_capacity, "The right capacity was stored")
+            self.assertEqual(spot_json["name"], new_name, "The right name was stored")
+            self.assertEqual(spot_json["capacity"], new_capacity, "The right capacity was stored")
+            meta_list = []
+            for m in self.spot.spotmetatypes.all():
+                meta_list.append(m.name)
+            self.assertEqual(spot_json["meta_type"], meta_list)
+
+    def test_valid_json_multiple_meta(self):
+        dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
+        with patch.object(models, 'cache', dummy_cache):
+            c = Client()
+            new_name = "testing POST name: {0}".format(random.random())
+            new_capacity = 10
+            new_meta_one = "meta1{0}".format(random.random())
+            new_meta_two = "meta2{0}".format(random.random())
+            response = c.post('/api/v1/spot/', '{"name":"%s","capacity":"%d", "meta_type":"[%s, %s]", "location": {"latitude": 50, "longitude": -30} }' % (new_name, new_capacity, new_meta_one, new_meta_two), content_type="application/json", follow=False)
+
+            self.assertEqual(response.status_code, 201, "Gives a Created response to creating a Spot")
+            self.assertIn("Location", response, "The response has a location header")
+
+            self.spot = Spot.objects.get(name=new_name)
+
+            self.assertEqual(response["Location"], 'http://testserver' + self.spot.rest_url(), "The uri for the new spot is correct")
+
+            get_response = c.get(response["Location"])
+            self.assertEqual(get_response.status_code, 200, "OK in response to GETing the new spot")
+
+            spot_json = json.loads(get_response.content)
+
+            self.assertEqual(spot_json["name"], new_name, "The right name was stored")
+            self.assertEqual(spot_json["capacity"], new_capacity, "The right capacity was stored")
+            self.assertEqual(spot_json["meta_type"], [new_meta_one, new_meta_two])
+
+    def test_json_no_meta(self):
+        dummy_cache = cache.get_cache('django.core.cache.backends.dummy.DummyCache')
+        with patch.object(models, 'cache', dummy_cache):
+            c = Client()
+            new_name = "testing POST name: {0}".format(random.random())
+            new_capacity = 10
+            response = c.post('/api/v1/spot/', '{"name":"%s","capacity":"%d", "location": {"latitude": 50, "longitude": -30} }' % (new_name, new_capacity), content_type="application/json", follow=False)
+
+            self.assertEqual(response.status_code, 400)
 
     def test_non_json(self):
         c = Client()
