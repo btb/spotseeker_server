@@ -34,18 +34,24 @@ class SpotGETTest(TestCase):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-            spot = Spot.objects.create(name="This is for testing GET",
+            self.client = Client()
+            spot1 = Spot.objects.create(name="This is for testing GET",
                                        latitude=55,
                                        longitude=30)
-            spot.save()
-            self.spot = spot
+            spot1.save()
+            self.spot1 = spot1
+
+            spot2 = Spot.objects.create(name="Testing spot with future",
+                                        latitude=23,
+                                        longitude=45)
+            spot2.save()
+            self.spot2 = spot2
 
     def test_invalid_id(self):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-            c = Client()
-            response = c.get("/api/v1/spot/bad_id")
+            response = self.client.get("/api/v1/spot/bad_id")
             self.assertEqual(response.status_code,
                              404,
                              "Rejects a non-numeric id")
@@ -54,53 +60,48 @@ class SpotGETTest(TestCase):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-            c = Client()
-            url = "/api/v1/spot/%s" % (self.spot.pk + 10000)
-            response = c.get(url)
+            url = "/api/v1/spot/%s" % (self.spot1.pk + 10000)
+            response = self.client.get(url)
             self.assertEqual(response.status_code, 404, "Spot ID too high")
 
     def test_content_type(self):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-            c = Client()
-            url = "/api/v1/spot/%s" % self.spot.pk
-            response = c.get(url)
+            url = "/api/v1/spot/%s" % self.spot1.pk
+            response = self.client.get(url)
             self.assertEqual(response["Content-Type"], "application/json")
 
             url = "/api/v1/spot/all"
-            response = c.get(url)
+            response = self.client.get(url)
             self.assertEqual(response["Content-Type"], "application/json")
 
     def test_etag(self):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-            c = Client()
-            url = "/api/v1/spot/%s" % self.spot.pk
-            response = c.get(url)
-            self.assertEqual(response["ETag"], self.spot.etag)
+            url = "/api/v1/spot/%s" % self.spot1.pk
+            response = self.client.get(url)
+            self.assertEqual(response["ETag"], self.spot1.etag)
 
     def test_invalid_params(self):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-            c = Client()
-            url = "/api/v1/spot/%s" % self.spot.pk
-            response = c.get(url, {'bad_param': 'does not exist'},)
+            url = "/api/v1/spot/%s" % self.spot1.pk
+            response = self.client.get(url, {'bad_param': 'does not exist'},)
             self.assertEqual(response.status_code, 200)
             spot_dict = json.loads(response.content)
             returned_spot = Spot.objects.get(pk=spot_dict['id'])
-            self.assertEqual(returned_spot, self.spot)
+            self.assertEqual(returned_spot, self.spot1)
 
     def test_valid_id(self):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
         with patch.object(models, 'cache', dummy_cache):
-            c = Client()
-            url = "/api/v1/spot/%s" % self.spot.pk
-            response = c.get(url)
+            url = "/api/v1/spot/%s" % self.spot1.pk
+            response = self.client.get(url)
             spot_dict = json.loads(response.content)
             returned_spot = Spot.objects.get(pk=spot_dict['id'])
             self.assertEqual(response.status_code, 200)
-            self.assertEqual(returned_spot, self.spot)
+            self.assertEqual(returned_spot, self.spot1)
