@@ -36,8 +36,8 @@ class SpotGETTest(TestCase):
         with patch.object(models, 'cache', dummy_cache):
             self.client = Client()
             spot1 = Spot.objects.create(name="This is for testing GET",
-                                       latitude=55,
-                                       longitude=30)
+                                        latitude=55,
+                                        longitude=30)
             spot1.save()
             self.spot1 = spot1
 
