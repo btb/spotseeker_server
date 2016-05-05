@@ -23,12 +23,16 @@ TEST_ROOT = abspath(dirname(__file__))
 
 class SpotModelToStringTests(TestCase):
     def test_spot(self):
+        """ Tests that a Spot can be successfully created.
+        """
         spot = Spot.objects.create(name="This is the test name")
 
         test_str = "{0}".format(spot)
         self.assertEqual(test_str, "This is the test name")
 
     def test_available_hours(self):
+        """ Tests that SpotAvailableHours can be successfully created.
+        """
         spot = Spot.objects.create(name="This is the test name")
         hours = SpotAvailableHours.objects.create(
             spot=spot,
@@ -40,12 +44,49 @@ class SpotModelToStringTests(TestCase):
         self.assertEqual(test_str,
                          "This is the test name: m, 11:00:00-14:00:00")
 
+#    def test_future_available_hours(self):
+#        """ Tests that FutureSpotAvailableHours can be sucessfully created.
+#        """
+#        spot = Spot.objects.create(name="This is the test name")
+#        hours = FutureSpotAvailableHours.objects.create(
+#            spot=spot,
+#            day="m",
+#            start_time="11:00",
+#            end_time="14:00",
+#            valid_on="2016-04-12T10:19:53.279649",
+#            valid_until="2016-05-12T10:19:53.279649")
+#
+#        test_str = "{0}".format(hours)
+#        self.assertEqual(test_str,
+#                         "This is the test name: m, 11:00:00-14:00:00")
+#        # assert that spot has future hours
+
+    # test_future_available_hours_no_valid_until
+
     def test_extended_info(self):
+        """ Tests creation of an ExtendedInfo object.
+        """
         spot = Spot.objects.create(name="This is the test name")
         attr = SpotExtendedInfo(key="has_whiteboards", value="1", spot=spot)
 
         test_str = "{0}".format(attr)
         self.assertEqual(test_str, "This is the test name[has_whiteboards: 1]")
+
+    def test_future_extended_info(self):
+        """ Tests creation of a FutureExtendedInfo object.
+        """
+        spot = Spot.objects.create(name="This is the test name")
+        attr = FutureSpotExtendedInfo(key="has_whiteboards",
+                                      value="1",
+                                      valid_on="2016-04-12T10:19:53.279649",
+                                      valid_until="2016-05-12T10:19:53.279649",
+                                      spot=spot)
+
+        test_str = "{0}".format(attr)
+        self.assertEqual(test_str, "This is the test name[has_whiteboards: 1]")
+        # assert that the model has valid on and valid until attrs
+
+    # test_future_extended_info_no_valid_until
 
     def test_image(self):
         spot = Spot.objects.create(name="This is the test name")

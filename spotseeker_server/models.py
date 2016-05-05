@@ -306,6 +306,13 @@ class SpotExtendedInfo(models.Model):
         super(SpotExtendedInfo, self).save(*args, **kwargs)
 
 
+class FutureSpotExtendedInfo(SpotExtendedInfo):
+    """ ExtendedInfo that can be defined to become valid on a certain date and
+        time, and optionally stop being valid on a later time.
+    """
+    valid_on = models.DateTimeField()
+    valid_until = models.DateTimeField()
+
 class SpotImage(models.Model):
     """ An image of a Spot. Multiple images can be associated with a Spot,
     and Spot objects have a 'Spot.spotimage_set' method that will return
