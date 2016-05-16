@@ -48,9 +48,10 @@ def update_etag(func):
     """Any model with an ETag can decorate an instance method with
     this to have a new ETag automatically generated. It's up to the
     wrapped function, however, to call save()."""
+
     def _newETag(self, *args, **kwargs):
         self.etag = hashlib.sha1("{0} - {1}".format(random.random(),
-                                 time.time())).hexdigest()
+                                                    time.time())).hexdigest()
         return func(self, *args, **kwargs)
     return wraps(func)(_newETag)
 
@@ -108,6 +109,15 @@ class Spot(models.Model):
             for attr in info:
                 extended_info[attr.key] = attr.value
 
+            future_extended_info = {}
+            info = FutureSpotExtendedInfo.objects.filter(spot=self)
+            for attr in info:
+                fei = dict()
+                fei[attr.key] = attr.value
+                fei["valid_on"] = attr.valid_on.isoformat()
+                fei["valid_until"] = attr.valid_until.isoformat()
+                future_extended_info[attr.pk] = fei
+
             available_hours = {
                 'monday': [],
                 'tuesday': [],
@@ -157,6 +167,7 @@ class Spot(models.Model):
                 "organization": self.organization,
                 "manager": self.manager,
                 "extended_info": extended_info,
+                "future_extended_info": future_extended_info,
                 "last_modified": self.last_modified.isoformat(),
                 "external_id": self.external_id
             }
@@ -312,6 +323,7 @@ class FutureSpotExtendedInfo(SpotExtendedInfo):
     """
     valid_on = models.DateTimeField()
     valid_until = models.DateTimeField()
+
 
 class SpotImage(models.Model):
     """ An image of a Spot. Multiple images can be associated with a Spot,
