@@ -71,3 +71,5 @@ from spotseeker_server.test.cache_test import JsonCachingTest
 from spotseeker_server.test.favorites import FavoritesTest
 from spotseeker_server.test.share_space import ShareSpaceTest
 from spotseeker_server.test.reviews import ReviewsTest
+
+from spotseeker_server.test.future.future_get import FutureGETTest
