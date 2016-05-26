@@ -12,7 +12,7 @@ class Migration(SchemaMigration):
         db.create_table('spotseeker_server_futurespotextendedinfo', (
             ('spotextendedinfo_ptr', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['spotseeker_server.SpotExtendedInfo'], unique=True, primary_key=True)),
             ('valid_on', self.gf('django.db.models.fields.DateTimeField')()),
-            ('valid_until', self.gf('django.db.models.fields.DateTimeField')()),
+            ('valid_until', self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True)),
         ))
         db.send_create_signal('spotseeker_server', ['FutureSpotExtendedInfo'])
 
@@ -80,7 +80,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'FutureSpotExtendedInfo', '_ormbases': ['spotseeker_server.SpotExtendedInfo']},
             'spotextendedinfo_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': "orm['spotseeker_server.SpotExtendedInfo']", 'unique': 'True', 'primary_key': 'True'}),
             'valid_on': ('django.db.models.fields.DateTimeField', [], {}),
-            'valid_until': ('django.db.models.fields.DateTimeField', [], {})
+            'valid_until': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'})
         },
         'spotseeker_server.sharedspace': {
             'Meta': {'object_name': 'SharedSpace'},

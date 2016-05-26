@@ -115,7 +115,8 @@ class Spot(models.Model):
                 fei = dict()
                 fei[attr.key] = attr.value
                 fei["valid_on"] = attr.valid_on.isoformat()
-                fei["valid_until"] = attr.valid_until.isoformat()
+                if attr.valid_until  is not None:
+                    fei["valid_until"] = attr.valid_until.isoformat()
                 future_extended_info[attr.pk] = fei
 
             available_hours = {
@@ -322,7 +323,7 @@ class FutureSpotExtendedInfo(SpotExtendedInfo):
         time, and optionally stop being valid on a later time.
     """
     valid_on = models.DateTimeField()
-    valid_until = models.DateTimeField()
+    valid_until = models.DateTimeField(null=True, blank=True)
 
 
 class SpotImage(models.Model):
