@@ -42,31 +42,6 @@ class SpotGETTest(TestCase):
             spot1.save()
             self.spot1 = spot1
 
-            spot2 = Spot.objects.create(name="Testing spot with future",
-                                        latitude=23,
-                                        longitude=45)
-            attr = \
-                FutureSpotExtendedInfo.objectes.create(key="has_whiteborads",
-                                                   value="true",
-                                                   valid_on="2016-04-12T10:19"
-                                                            ":53.279649",
-                                                   valid_until="2016-04-12T10:"
-                                                               "19:53.279649",
-                                                   spot=spot2)
-
-            hours1 = \
-                FutureSpotAvailableHours.objects.create(spot=spot2,
-                                                        day="m",
-                                                        start_time="11:00:00",
-                                                        end_time="23:00:00")
-            hours2 = \
-                FutureSpotAvailableHours.objects.create(spot=spot2,
-                                                        day="t",
-                                                        start_time="9:00:00",
-                                                        end_time="23:59:59")
-            spot2.save()
-            self.spot2 = spot2
-
     def test_invalid_id(self):
         dummy_cache = \
             cache.get_cache('django.core.cache.backends.dummy.DummyCache')
@@ -125,40 +100,3 @@ class SpotGETTest(TestCase):
             returned_spot = Spot.objects.get(pk=spot_dict['id'])
             self.assertEqual(response.status_code, 200)
             self.assertEqual(returned_spot, self.spot1)
-
-    # def test_spot_future_available_hours(self):
-    #    dummy_cache = \
-    #        cache.get_cache('django.core.cache.backends.dummy.DummyCache')
-    #    with patch.object(models, 'cache', dummy_cache):
-    #        url = "/api/v1/spot/%s" % self.spot2.pk
-    #        response = self.client.get(url)
-    #        returned_spot = Spot.objects.get(pk=spot_dict['id'])
-    #        self.assertEqual(response.status_code, 200)
-    #        self.assertEqual(returned_spot, self.spot2)
-
-    def test_spot_future_extended_info(self):
-        dummy_cache = \
-            cache.get_cache('django.core.cache.backends.dummy.DummyCache')
-        with patch.object(models, 'cache', dummy_cache):
-            url = "/api/v1/spot/%s" % self.spot2.pk
-            response = self.client.get(url)
-            spot_dict = json.loads(response.content)
-            returned_spot = Spot.objects.get(pk=spot_dict['id'])
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(returned_spot, self.spot2)
-            self.assertEqual(spot_dict['future_extended_info']['1']['key'],
-                             'has_whiteboards')
-            self.assertEqual(
-                spot_dict['future_extended_info']['1']['valid_on'],
-                '2016-04-12T10:19:53.279649'
-            )
-
-    # def test_spot_future_available_hours(self):
-    #    dummy_cache = \
-    #        cache.get_cache('django.core.cache.backends.dummy.DummyCache')
-    #    with patch.object(models, 'cache', dummy_cache):
-    #        url = "/api/v1/spot/%s" % self.spot2.pk
-    #        response = self.client.get(url)
-    #        returned_spot = Spot.objects.get(pk=spot_dict['id'])
-    #        self.assertEqual(response.status_code, 200)
-    #        self.assertEqual(returned_spot, self.spot2)
