@@ -73,3 +73,5 @@ from spotseeker_server.test.share_space import ShareSpaceTest
 from spotseeker_server.test.reviews import ReviewsTest
 
 from spotseeker_server.test.future.future_get import FutureGETTest
+from spotseeker_server.test.future.future_post import FuturePOSTTest
+from spotseeker_server.test.future.future_put import FuturePUTTest

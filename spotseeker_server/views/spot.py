@@ -71,6 +71,42 @@ def _build_extended_info(sender, **kwargs):
 
 
 @django.dispatch.receiver(
+    spot_pre_save,
+    dispatch_uid='spotseeker_server.views.spot.build_future_extended_info'
+)
+def _build_future_extended_info(sender, **kwargs):
+    """Get new and old future extended info dicts, reutrned as tuples"""
+    import pdb; pdb.set_trace()
+    json_values = kwargs['json_values']
+    spot = kwargs['spot']
+    stash = kwargs['stash']
+
+    new_future_info = json_values.pop('future_extended_info', None)
+    if new_future_info is not None:
+        for key in new_future_info.keys():
+            value = new_future_info[key]
+            if value is None or unicode(value) == '':
+                del new_future_info[key]
+
+    old_future_info = {}
+    if spot is not None:
+        old_future_info = {}
+        for fei in spot.spotextendedinfo_set.all():
+            values = {}
+            values[]
+            try:
+                values['valid_until'] = fei.futurespotextendedinfo.valid_until
+            except:
+                values['valid_until'] = ''
+            values['valid_on'] = fei.futurespotextendedinfo.valid_on
+            old_future_info[ei.futurespotextendedinfo.key] = \
+                values
+
+    stash['new_future_extended_info'] = new_future_info
+    stash['old_future_extended_info'] = old_future_info
+
+
+@django.dispatch.receiver(
     spot_post_save,
     dispatch_uid='spotseeker_server.views.spot.save_available_hours')
 def _save_available_hours(sender, **kwargs):
@@ -99,6 +135,55 @@ def _save_available_hours(sender, **kwargs):
                     start_time=window[0],
                     end_time=window[1]
                 )
+
+
+@django.dispatch.receiver(
+    spot_post_save,
+    dispatch_uid='spotseeker_server.views.spot.save_extended_info')
+def _save_future_extended_info(sender, **kwargs):
+    """Sync the future extended info for the spot"""
+    spot = kwargs['spot']
+    partial_update = kwargs['partial_update']
+    stash = kwargs['stash']
+
+    new_future_info = stash['new_future_extended_info']
+    old_future_info = stash['old_future_extended_info']
+
+    if new_future_info is None:
+        if not partial_update:
+            FutureSpotExtendedInfo.objects.filter(spot=spot).delete()
+    else:
+        # first, loop over the new future extended info and either:
+        # - add items that are new
+        # - update items that are old
+        for key in new_future_info:
+            value = new_future_info[key]
+
+            fei = None
+            if key in old_future_info:
+                if value == old_future_info[key]:
+                    continue
+                else:
+                    fei = FutureSpotExtendedInfo.objects.get(spot=spot, key=key)
+
+            feiform = FutureSpotExtendedInfoForm({'spot': spot.pk,
+                                                  'key': key,
+                                                  'value': value},
+                                                 instance=ei)
+            if not feiform.is_valid():
+                raise RESTFormInvalidError(feiform)
+
+            fei = feiform.save()
+        # Now loop over the different in the keys and remove old
+        # items that aren't present in the new set
+        for key in (set(old_future_info.keys()) -
+                    set(new_future_info.keys())):
+            try:
+                fei = FutureSpotExtendedInfo.objects.get(spot=spot, key=key)
+                fei.delete()
+            except FutureSpotExtendedInfo.DoesNotExist:
+                # removing something that does not exist isn't an error
+                pass
 
 
 @django.dispatch.receiver(
@@ -193,6 +278,7 @@ class SpotView(RESTDispatch):
     # These are utility methods for the HTTP methods
     @transaction.commit_on_success
     def build_and_save_from_input(self, request, spot):
+        import pdb; pdb.set_trace()
         body = request.read()
         try:
             json_values = json.loads(body)
