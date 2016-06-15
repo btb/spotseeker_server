@@ -109,15 +109,15 @@ class Spot(models.Model):
             for attr in info:
                 extended_info[attr.key] = attr.value
 
-            future_extended_info = {}
+            future_extended_info = []
             info = FutureSpotExtendedInfo.objects.filter(spot=self)
             for attr in info:
                 fei = dict()
                 fei[attr.key] = attr.value
                 fei["valid_on"] = attr.valid_on.isoformat()
-                if attr.valid_until  is not None:
+                if attr.valid_until is not None:
                     fei["valid_until"] = attr.valid_until.isoformat()
-                future_extended_info[attr.pk] = fei
+                future_extended_info.append(fei)
 
             available_hours = {
                 'monday': [],

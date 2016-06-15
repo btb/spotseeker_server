@@ -37,7 +37,7 @@ class FuturePUTTest(TestCase):
         attr = FutureSpotExtendedInfo.objects.create(
             key="has_whiteboards",
             value="true",
-            valid_on="2016-04-12T17:19:53.279649+00:00",
+            valid_on="2016-10-12T17:19:53.279649+00:00",
             valid_until="2016-04-12T17:19:53.279649+00:00",
             spot=self.spot1
         )
@@ -63,7 +63,7 @@ class FuturePUTTest(TestCase):
 
         self.client = Client()
 
-    def test_spot_put_future_info(self):
+    def test_spot_put_new_future_info(self):
         url = "/api/v1/spot/%s" % self.spot1.pk
 
         response = self.client.get(url)
@@ -73,18 +73,48 @@ class FuturePUTTest(TestCase):
             url,
             '{"name":"%s","capacity":"%d", "location": '
             '{"latitude": 55, "longitude": 30}, '
-            '"future_extended_info": {"1":'
-            '{"has_a_funky_beat": "true",'
+            '"future_extended_info": '
+            '[ {"has_a_funky_beat": "true",'
             '"valid_on":"2016-04-12T10:19:53.279649",'
-            '"valid_until": ""} } }'
+            '"valid_until": ""},'
+            '{"has_whiteboards": "true",'
+            '"valid_on": "2016-10-12T17:19:53.279649", '
+            '"valid_until": "2016-04-12T17:19:53.279649"},'
+            '{"has_dlfgdf": "true", '
+            '"valid_on": "2016-04-12T17:19:53.279649", '
+            '"valid_until": "2016-04-12T17:19:53.279649"}] }'
             % (self.spot1.name, 5),
             content_type="application/json",
             If_Match=etag)
 
         self.assertEqual(response.status_code, 200)
-        import pdb; pdb.set_trace()
 
         self.assertEqual(
             len(self.spot1.spotextendedinfo_set.filter(
                 key="has_a_funky_beat")),
             1)
+
+    def test_spot_put_remove_future_info(self):
+        url = "/api/v1/spot/%s" % self.spot1.pk
+
+        response = self.client.get(url)
+        etag = response["ETag"]
+
+        response = self.client.put(
+            url,
+            '{"name":"%s","capacity":"%d", "location": '
+            '{"latitude": 55, "longitude": 30}, '
+            '"future_extended_info": '
+            '[ {"has_whiteboards": "true",'
+            '"valid_on": "2016-10-12T17:19:53.279649", '
+            '"valid_until": "2016-04-12T17:19:53.279649"} ] }'
+            % (self.spot1.name, 5),
+            content_type="application/json",
+            If_Match=etag)
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(
+            len(self.spot1.spotextendedinfo_set.filter(
+                key="has_dlfgdf")),
+            0)

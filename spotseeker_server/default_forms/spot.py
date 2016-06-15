@@ -21,7 +21,8 @@
 
 from decimal import Decimal
 from django import forms
-from spotseeker_server.models import Spot, SpotExtendedInfo
+from spotseeker_server.models import Spot, SpotExtendedInfo,\
+    FutureSpotExtendedInfo
 import re
 
 LATITUDE_MAX = Decimal('90')
@@ -34,6 +35,19 @@ class DefaultSpotExtendedInfoForm(forms.ModelForm):
 
     class Meta:
         model = SpotExtendedInfo
+
+    def clean_key(self):
+        key = self.cleaned_data['key'].strip()
+        if not re.match(r'^[a-z0-9_-]+$', key, re.I):
+            raise forms.ValidationError(
+                "Key must be only alphanumerics, underscores, and hyphens")
+        return key
+
+
+class DefaultFutureSpotExtendedInfoForm(forms.ModelForm):
+
+    class Meta:
+        model = FutureSpotExtendedInfo
 
     def clean_key(self):
         key = self.cleaned_data['key'].strip()

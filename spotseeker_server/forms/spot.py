@@ -55,6 +55,31 @@ class SpotExtendedInfoForm(object):
         return SpotExtendedInfoForm.implementation()(args[1], **kwargs)
 
 
+class FutureSpotExtendedInfoForm(object):
+    @staticmethod
+    def implementation():
+        if hasattr(settings, 'SPOTSEEKER_FUTURESPOTEXTENDEDINFO_FORM'):
+            # This is all taken from django's static file finder
+            module, attr = \
+                settings.SPOTSEEKER_FUTURESPOTEXTENDEDINFO_FORM.rsplit('.', 1)
+            try:
+                mod = import_module(module)
+            except ImportError, e:
+                raise ImproperlyConfigured('Error importing module %s: "%s"' %
+                                           (module, e))
+            try:
+                FutureSpotExtendedInfoForm = getattr(mod, attr)
+            except AttributeError:
+                raise ImproperlyConfigured('Module "%s" does not define '
+                                           'a "%s" class.' % (module, attr))
+            return FutureSpotExtendedInfoForm
+        else:
+            return DefaultFutureSpotExtendedInfoForm
+
+    def __new__(*args, **kwargs):
+        return FutureSpotExtendedInfoForm.implementation()(args[1], **kwargs)
+
+
 class SpotForm(object):
     @staticmethod
     def implementation():

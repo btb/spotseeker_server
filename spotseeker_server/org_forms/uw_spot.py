@@ -21,9 +21,11 @@
 from django import forms
 from django.dispatch import receiver
 from spotseeker_server.default_forms.spot import DefaultSpotForm
-from spotseeker_server.default_forms.spot import DefaultSpotExtendedInfoForm
+from spotseeker_server.default_forms.spot import DefaultSpotExtendedInfoForm,\
+    DefaultFutureSpotExtendedInfoForm
 from spotseeker_server.models import Spot, SpotExtendedInfo
 from spotseeker_server.dispatch import spot_post_build
+import datetime
 import simplejson as json
 import re
 
@@ -31,6 +33,7 @@ import re
 # dict of all of the uw extended info with values that must be validated
 # and what all of the possible validated values are, or validated types
 validated_ei = {
+    # study
     "has_whiteboards": ['true'],
     "has_outlets": ['true'],
     "has_printing": ['true'],
@@ -44,7 +47,25 @@ validated_ei = {
     "num_computers": "int",
     "reservable": ['true', 'reservations'],
     "noise_level": ['silent', 'quiet', 'moderate', 'variable'],
+    # general
     "campus": ['seattle', 'tacoma', 'bothell', 'south_lake_union'],
+    # food
+    "cuisine": ["american", "bbq", "chinese", "hawaiian", "itallian"],
+    "food_served": ["burgers",
+                    "salads",
+                    "appetizers",
+                    "pizza",
+                    "sandwiches",
+                    "coffee_espresso"],
+    "has_delivery": ["true"],
+    "payment_accepted": ["cash",
+                         "visa",
+                         "mastercard",
+                         "husky_card",
+                         "dining_account"],
+    # future
+    "valid_on": "datetime",
+    "valid_until": "datetime",
 }
 
 
@@ -57,6 +78,15 @@ def uw_validate(value, choices):
             int(value)
         except:
             raise forms.ValidationError("Value must be an int")
+    if choices == "datetime":
+        try:
+            # TODO: need to add validation to the times
+            value = 'hi'
+            # datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f")
+        except:
+            raise forms.ValidationError(
+                "Valid on and valid until must be in the proper format"
+            )
     elif value not in choices:
         raise forms.ValidationError(
             "Value must be one of: {0}".format('; '.join(choices)))
@@ -73,6 +103,27 @@ class UWSpotExtendedInfoForm(DefaultSpotExtendedInfoForm):
 
         if key in validated_ei:
             uw_validate(value, validated_ei[key])
+
+        return cleaned_data
+
+
+class UWFutureSpotExtendedInfoForm(DefaultFutureSpotExtendedInfoForm):
+
+    def clean(self):
+        cleaned_data = super(UWFutureSpotExtendedInfoForm, self).clean()
+
+        # Have to check value here since we look at multiple items
+        key = self.cleaned_data['key']
+        value = self.cleaned_data['value']
+        valid_on = self.data['valid_on']
+        valid_until = self.data['valid_until']
+
+        if key in validated_ei:
+            uw_validate(value, validated_ei[key])
+        uw_validate(valid_on, validated_ei['valid_on'])
+        uw_validate(valid_until, validated_ei['valid_until'])
+        cleaned_data['valid_on'] = valid_on
+        cleaned_data['valid_until'] = valid_until
 
         return cleaned_data
 

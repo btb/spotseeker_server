@@ -23,7 +23,8 @@
 
 from spotseeker_server.views.rest_dispatch import \
     RESTDispatch, RESTException, RESTFormInvalidError, JSONResponse
-from spotseeker_server.forms.spot import SpotForm, SpotExtendedInfoForm
+from spotseeker_server.forms.spot import SpotForm, SpotExtendedInfoForm, \
+    FutureSpotExtendedInfoForm
 from spotseeker_server.models import *
 from django.http import HttpResponse
 from spotseeker_server.require_auth import *
@@ -32,6 +33,8 @@ import simplejson as json
 import django.dispatch
 from spotseeker_server.dispatch import \
     spot_pre_build, spot_pre_save, spot_post_save, spot_post_build
+from django.utils import timezone
+import pytz
 
 
 @django.dispatch.receiver(
@@ -76,34 +79,46 @@ def _build_extended_info(sender, **kwargs):
 )
 def _build_future_extended_info(sender, **kwargs):
     """Get new and old future extended info dicts, reutrned as tuples"""
-    import pdb; pdb.set_trace()
     json_values = kwargs['json_values']
     spot = kwargs['spot']
     stash = kwargs['stash']
 
-    new_future_info = json_values.pop('future_extended_info', None)
-    if new_future_info is not None:
-        for key in new_future_info.keys():
-            value = new_future_info[key]
-            if value is None or unicode(value) == '':
-                del new_future_info[key]
-
-    old_future_info = {}
     if spot is not None:
-        old_future_info = {}
+        old_future_info = []
         for fei in spot.spotextendedinfo_set.all():
             values = {}
-            values[]
+            values[fei.key] = fei.value
             try:
-                values['valid_until'] = fei.futurespotextendedinfo.valid_until
+                values['valid_until'] = \
+                    fei.futurespotextendedinfo.valid_until.strftime(
+                        "%Y-%m-%dT%H:%M:%S.%f"
+                    )
             except:
                 values['valid_until'] = ''
-            values['valid_on'] = fei.futurespotextendedinfo.valid_on
-            old_future_info[ei.futurespotextendedinfo.key] = \
-                values
+            values['valid_on'] = fei.futurespotextendedinfo.valid_on.strftime(
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )
+            old_future_info.append(values)
+
+    to_add_future_info = []
+    new_future_info = json_values.pop('future_extended_info', None)
+    if new_future_info is not None:
+        for info in new_future_info:
+            if (info['valid_on'] is None or
+                    unicode(info['valid_on']) == ''):
+                del info
+            if info not in old_future_info:
+                to_add_future_info.append(info)
+
+    to_remove_future_info = []
+    for info in old_future_info:
+        if info not in new_future_info:
+            to_remove_future_info.append(info)
 
     stash['new_future_extended_info'] = new_future_info
     stash['old_future_extended_info'] = old_future_info
+    stash['to_remove_future_info'] = to_remove_future_info
+    stash['to_add_future_info'] = to_add_future_info
 
 
 @django.dispatch.receiver(
@@ -146,41 +161,75 @@ def _save_future_extended_info(sender, **kwargs):
     partial_update = kwargs['partial_update']
     stash = kwargs['stash']
 
-    new_future_info = stash['new_future_extended_info']
-    old_future_info = stash['old_future_extended_info']
+    to_add_future_info = stash['to_add_future_info']
+    to_remove_future_info = stash['to_remove_future_info']
 
-    if new_future_info is None:
+    if to_add_future_info is None:
         if not partial_update:
             FutureSpotExtendedInfo.objects.filter(spot=spot).delete()
     else:
         # first, loop over the new future extended info and either:
         # - add items that are new
         # - update items that are old
-        for key in new_future_info:
-            value = new_future_info[key]
-
+        for info in to_add_future_info:
+            fei_key = ''
+            for key in info.keys():
+                if (not key == 'valid_on' and
+                        not key == 'valid_until'):
+                    fei_key = key
             fei = None
-            if key in old_future_info:
-                if value == old_future_info[key]:
+
+            info['valid_on'] = datetime.datetime.strptime(
+                info['valid_on'],
+                "%Y-%m-%dT%H:%M:%S.%f"
+            )
+            info['valid_on'] = timezone.make_aware(
+                info['valid_on'],
+                timezone.get_default_timezone()
+            )
+
+            if not info['valid_until'] == '':
+                info['valid_until'] = datetime.datetime.strptime(
+                    info['valid_until'],
+                    "%Y-%m-%dT%H:%M:%S.%f"
+                )
+                info['valid_until'] = timezone.make_aware(
+                    info['valid_until'],
+                    timezone.get_default_timezone())
+            else:
+                info['valid_until'] = None
+
+            if info in to_remove_future_info:
+                if (to_add_future_info[fei_key] ==
+                        to_remove_future_info[fei_key]):
                     continue
                 else:
-                    fei = FutureSpotExtendedInfo.objects.get(spot=spot, key=key)
+                    fei = FutureSpotExtendedInfo.objects.get(
+                        spot=spot, key=fei_key
+                    )
 
-            feiform = FutureSpotExtendedInfoForm({'spot': spot.pk,
-                                                  'key': key,
-                                                  'value': value},
-                                                 instance=ei)
+            feiform = FutureSpotExtendedInfoForm(
+                {'spot': spot.pk,
+                 'key': fei_key,
+                 'value': info[fei_key],
+                 'valid_on': info['valid_on'],
+                 'valid_until': info['valid_until']
+                 },
+                instance=fei)
             if not feiform.is_valid():
                 raise RESTFormInvalidError(feiform)
 
             fei = feiform.save()
         # Now loop over the different in the keys and remove old
         # items that aren't present in the new set
-        for key in (set(old_future_info.keys()) -
-                    set(new_future_info.keys())):
+        for info in to_remove_future_info:
+            for key in info.keys():
+                if (not key == 'valid_on' and
+                        not key == 'valid_until'):
+                    fei_key = key
             try:
-                fei = FutureSpotExtendedInfo.objects.get(spot=spot, key=key)
-                fei.delete()
+                ei = FutureSpotExtendedInfo.objects.get(spot=spot, key=key)
+                ei.delete()
             except FutureSpotExtendedInfo.DoesNotExist:
                 # removing something that does not exist isn't an error
                 pass
@@ -278,7 +327,6 @@ class SpotView(RESTDispatch):
     # These are utility methods for the HTTP methods
     @transaction.commit_on_success
     def build_and_save_from_input(self, request, spot):
-        import pdb; pdb.set_trace()
         body = request.read()
         try:
             json_values = json.loads(body)

@@ -142,8 +142,7 @@ class UWSpotPUTTest(TransactionTestCase):
                 new_name, new_capacity)
             response = c.put(self.url, json_string,
                              content_type="application/json", If_Match=etag)
-            self.assertEquals(response.status_code, 200,
-                              "Accepts a valid json string")
+            self.assertEquals(response.status_code, 200)
 
             updated_spot = Spot.objects.get(pk=self.spot.pk)
             self.assertEquals(updated_spot.name, new_name,
