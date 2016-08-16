@@ -16,12 +16,7 @@ def get_spots(spots):
     """Retrieves a list of spots from the cache."""
     if not spots_cache:
         load_spots()
-
-    spot_dicts = []
-    for spot in spots:
-        verify_cache(spot)
-        spot_json = spots_cache[spot.id]
-        spot_dicts.append(spot_json)
+    spot_dicts = [get_spot(spot) for spot in spots]
 
     return spot_dicts
 
