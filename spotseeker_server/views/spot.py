@@ -498,14 +498,16 @@ class SpotView(RESTDispatch):
         # gets the current etag
         spot = Spot.get_with_external(spot.pk)
 
+        spot_cache = SpotCache()
+        spot_json = spot.json_data_structure()
+        spot_cache.cache_spot_json(spot_json)
+
         if is_new:
             response = HttpResponse(status=201)
             response['Location'] = spot.rest_url()
         else:
-            spot_json = spot.json_data_structure()
-            spot_cache = SpotCache()
-            spot_cache.cache_spot_json(spot)
             response = JSONResponse(spot_json, status=200)
+
         response["ETag"] = spot.etag
 
         spot_post_build.send(

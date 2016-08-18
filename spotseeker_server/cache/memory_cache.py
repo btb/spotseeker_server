@@ -120,7 +120,6 @@ def verify_cache(spot_model):
 
 def verify_etag(spot_model):
     """Checks the model etag against the cache, updates if out of date."""
-    spot_model.update()
     if (spot_model.id in spots_cache and
             spots_cache[spot_model.id]['etag'] != spot_model.etag):
         cache_spot(spot_model)
